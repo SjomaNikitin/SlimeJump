@@ -1,0 +1,57 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    background-color: rgb(81, 185, 255);
+  }
+
+  body {
+    display: flex;
+
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Roboto';
+  }
+
+  canvas {
+    position:fixed;
+    top:0;
+    left: 50%;
+    transform: translate(-50%,0);
+  }
+
+  img {
+    width: 300;
+    height: auto;
+    position: fixed;
+  }
+
+  .score{
+    position: fixed;
+    left: 5vw;
+    top: 5vw;
+    font-size: 1000%;
+    color:rgba(255, 255, 255, 0);
+  }
+
+  .playButton{
+    width: 90%;
+    height: auto;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+  }
+  .reloadButton{
+    width: 40%;
+    height: auto;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%,-50%);
+  }
+
+  .endScore{
+    position: fixed;
+    color: white;
+    transform: translate(-50%,-50%);
+  }

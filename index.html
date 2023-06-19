@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Dino Jump</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;400&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+</head>
+
+<body>
+  <canvas id="game"></canvas>
+  <div class="score">0</div>
+  <div id="startPage">
+    <div class="endScore" style="left:50%; top:15%; font-size: 500%;">Best Score</div>
+    <div id="bestScore" class="endScore" style="left:50%; top:22.5%; font-size: 700%;">119</div>
+    <img src="Images/playButton.png" class="playButton">
+  </div>
+  <div id="endPage" style="display:none">
+    <button id="returnBut" class="endScore"
+      style="left: 50%; top: 75%; font-size: 600%; color: gray; background-color: rgba(240, 248, 255, 0); border: 3px solid gray; border-radius: 20px;">LOBBY</button>
+    <img src="Images/reloadButton.png" class="reloadButton">
+    <div class="endScore" style="left:50%; top:15%; font-size: 500%;">SCORE</div>
+    <div id="endScore" class="endScore" style="left: 50%; top: 25%; font-size: 750%;">100/100</div>
+  </div>
+
+  <script src="control.js"></script>
+  <script>
+
+    document.body.style["overscrollBehavior"] = "none";
+    document.body.style["touchAction"] = "none";
+    document.body.style["position"] = "fixed";
+    document.body.style["width"] = "100%";
+    document.body.parentElement.style["position"] = "fixed";
+    document.body.parentElement.style["width"] = "100%";
+
+
+    const playButton = document.querySelector(".playButton");
+
+    playButton.addEventListener("touchend", function () {
+      startGame()
+    })
+    const startPage = document.getElementById("startPage");
+    const endPage = document.getElementById("endPage");
+
+    let dinoJumpRight = document.createElement("img");
+    dinoJumpRight.src = "Images/Dino/Dino_Jump_Right.png"
+    let dinoJumpLeft = document.createElement("img");
+    dinoJumpLeft.src = "Images/Dino/Dino_Jump_Left.png"
+    let platform3Img = document.createElement("img");
+    platform3Img.src = "Images/Platforms/platform3.png"
+    let platform2Img = document.createElement("img");
+    platform2Img.src = "Images/Platforms/platform2.png"
+    let platform1Img = document.createElement("img");
+    platform1Img.src = "Images/Platforms/platform1.png"
+    let cloudImg = document.createElement("img");
+    cloudImg.src = "Images/cloud.png"
+
+    const canvas = document.getElementById('game');
+    const context = canvas.getContext('2d');
+    const score = document.querySelector(".score");
+    const endScore = document.getElementById("endScore");
+    const reloadButton = document.querySelector(".reloadButton");
+    const bestScore = document.getElementById("bestScore");
+    const returnBut = document.getElementById("returnBut");
+    let slimeType = 1;
+    let scoreBest;
+    let scoreNow = 0;
+    let platformImg = platform2Img;
+
+    if (localStorage.getItem('bestScore') != null) {
+      scoreBest = localStorage.getItem('bestScore')
+      bestScore.innerHTML = scoreBest
+    } else {
+      bestScore.innerHTML = "0"
+      localStorage.setItem('bestScore', '0');
+      scoreBest = localStorage.getItem('bestScore')
+    }
+    reloadButton.addEventListener("touchend", function () {
+      startGame()
+      endPage.style.display = "none"
+    })
+
+    returnBut.addEventListener("touchend", function () {
+      endPage.style.display = "none"
+      startPage.style.display = ""
+      if (localStorage.getItem('bestScore') != null) {
+        scoreBest = localStorage.getItem('bestScore')
+        bestScore.innerHTML = scoreBest
+      } else {
+        bestScore.innerHTML = "0"
+        localStorage.setItem('bestScore', '0');
+        scoreBest = localStorage.getItem('bestScore')
+      }
+    })
+
+    function GameOver() {
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      game = "off"
+
+      score.style.color = "rgba(255, 255, 255, 0)"
+      score.innerText = 0
+      endPage.style.display = ""
+
+      if (scoreNow > scoreBest) {
+        endScore.innerText = Math.round(scoreNow) + " / " + Math.round(scoreNow)
+        scoreBest = Math.round(scoreNow)
+        localStorage.setItem('bestScore', scoreBest)
+      } else {
+        endScore.innerText = Math.round(scoreNow) + " / " + Math.round(scoreBest)
+      }
+      scoreNow = 0;
+    };
+
+    function startGame() {
+      canvas.style.border = "1px solid black"
+
+
+
+      const height = window.innerHeight - 4
+      let width = window.innerWidth
+
+      canvas.width = width;
+      canvas.height = height;
+
+      startPage.style.display = "none"
+      score.style.color = "black"
+      game = "on"
+      // width and height of each platform and where platforms start
+      const platformWidth = width / 5.77
+      const platformHeight = height / 33.35
+      const platformStart = canvas.height - 50;
+
+      // Dino move speed
+
+      const moveSpeed = 7;
+
+      // Which dino Image
+      let dinoImg = dinoJumpRight;
+
+      // player physics
+      const gravity = 0.25;
+      const drag = 0.3;
+      const bounceVelocity = -18.5;
+
+      // minimum and maximum vertical space between each platform
+      let minPlatformSpace = height / 16.675;
+      let maxPlatformSpace = height / 6.06;
+
+      // add broke platform chance
+      let brokePlatformChance = 3;
+
+      // information about each platform. the first platform starts in the
+      // bottom middle of the screen
+      let platforms = [{
+        x: canvas.width / 2 - platformWidth / 2,
+        y: platformStart,
+        type: 2
+      }];
+
+      // get a random number between the min (inclusive) and max (exclusive)
+      function random(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      // fill the initial screen with platforms
+      let y = platformStart;
+      while (y > 0) {
+        // the next platform can be placed above the previous one with a space
+        // somewhere between the min and max space
+        y -= platformHeight + random(minPlatformSpace, maxPlatformSpace);
+
+        // a platform can be placed anywhere 25px from the left edge of the canvas
+        // and 25px from the right edge of the canvas (taking into account platform
+        // width).
+        // however the first few platforms cannot be placed in the center so
+        // that the player will bounce up and down without going up the screen
+        // until they are ready to move
+        let x;
+        do {
+          x = random(25, canvas.width - 25 - platformWidth);
+        } while (
+          y > canvas.height / 2 &&
+          x > canvas.width / 2 - platformWidth * 1.5 &&
+          x < canvas.width / 2 + platformWidth / 2
+        );
+
+        type = 2
+
+        platforms.push({ x, y, type });
+      }
+
+      // the dino jumper
+      const dino = {
+        width: height / 11.375,
+        height: height / 11.375,
+        x: canvas.width / 2 - (width / 9.375),
+        // y: platformStart - height / 11.12,
+        y: height - platformHeight * 12,
+
+        // velocity
+        dx: 0,
+        dy: 0,
+      };
+
+      // keep track of player direction and actions
+      let playerDir = 0;
+      let keydown = false;
+      let prevDinoY = dino.y;
+
+      let intervalId;
+      // game loop
+      function loop() {
+        if (dino.y > height) {
+          GameOver();
+          clearInterval(intervalId);
+          return;
+        } else {
+
+          // requestAnimationFrame(loop);
+        }
+
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+        // apply gravity to dino
+        dino.dy += gravity;
+
+        // if dino reaches the middle of the screen, move the platforms down
+        // instead of dino up to make it look like dino is going 
+
+        if (dino.y < canvas.height / 2.5 && dino.dy < 0) {
+          scoreNow += 0.04
+          score.innerText = Math.round(scoreNow)
+
+          platforms.forEach(function (platform) {
+            platform.y += -dino.dy;
+            console.log("scroll...")
+          });
+
+          // add more platforms to the top of the screen as dino moves up
+          while (platforms[platforms.length - 1].y > 0) {
+            let types;
+            const numb = Math.round(random(1, 10));
+            if (numb > brokePlatformChance) {
+              types = 2;
+            } else {
+              if (numb > brokePlatformChance - 2) {
+                types = 1;
+              } else {
+                types = 3;
+              }
+            }
+            platforms.push({
+              type: types,
+              x: random(25, canvas.width - 25 - platformWidth),
+              y: platforms[platforms.length - 1].y - (platformHeight + random(minPlatformSpace, maxPlatformSpace))
+            })
+            // add a bit to the min/max platform space as the player goes up
+            minPlatformSpace += 0.5;
+            maxPlatformSpace += 0.5;
+
+            // cap max space
+            maxPlatformSpace = Math.min(maxPlatformSpace, canvas.height / 2);
+          }
+        }
+        else {
+          dino.y += dino.dy;
+
+        }
+
+        // make dino wrap the screen
+        if (dino.x + dino.width < 0) {
+          dino.x = canvas.width;
+        }
+        else if (dino.x > canvas.width) {
+          dino.x = -dino.width;
+        }
+
+        // draw platforms
+
+        platforms.forEach(function (platform) {
+          if (platform.type != 0) {
+            if (platform.type === 2) {
+              platformImg = platform2Img;
+            } else if (platform.type === 1) {
+              platformImg = platform1Img;
+            } else if (platform.type = 3) {
+              platformImg = platform3Img
+            }
+            context.drawImage(platformImg, platform.x, platform.y, platformWidth, platformHeight)
+          }
+          // make dino jump if it collides with a platform from above
+          if (
+
+            // platform is visible
+            platform.type != 0 &&
+
+            // dino is falling
+            dino.dy > 0 &&
+
+            // dino was previous above the platform
+            prevDinoY + dino.height <= platform.y &&
+
+            // dino collides with platform
+            // (Axis Aligned Bounding Box [AABB] collision check)
+            dino.x < platform.x + platformWidth &&
+            dino.x + dino.width > platform.x &&
+            dino.y < platform.y + platformHeight &&
+            dino.y + dino.height > platform.y
+          ) {
+            // reset dino position so it's on top of the platform
+            dino.y = platform.y - dino.height;
+            dino.dy = bounceVelocity;
+            if (platform.type === 1) {
+              platform.type = 0;
+            }
+            if (platform.type === 3) {
+              GameOver();
+          clearInterval(intervalId);
+          setTimeout(function(){context.clearRect(0, 0, canvas.width, canvas.height)}, 20)
+          return;
+            }
+          }
+        });
+
+
+        // draw dino
+        context.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+
+        prevDinoY = dino.y;
+
+        // remove any platforms that have gone offscreen
+        platforms = platforms.filter(function (platform) {
+          return platform.y < canvas.height;
+        })
+      }
+
+      intervalId = setInterval(loop, 7.5);
+
+      // listen to keyboard events to move dino
+
+
+
+      document.addEventListener('click', function (e) {
+        // left arrow key
+        if (e.which === 37) {
+
+
+        }
+        // right arrow key
+        else if (e.which === 39) {
+          keydown = true;
+          playerDir = 1;
+          dino.dx = 3 * window.devicePixelRatio;
+        }
+      });
+
+      document.addEventListener('touchend', function (e) {
+        keydown = false;
+      });
+
+      // game over function
+      let prevX = 0
+      let touchendX = 0
+
+      let intId;
+
+      function moveDino(posX) {
+        clearInterval(intId)
+        intId = setInterval(function () {
+          if (dino.x != posX) {
+            if (posX > dino.x) {
+              dinoImg = dinoJumpRight;
+              if (posX - dino.x > moveSpeed) {
+                dino.x += moveSpeed
+              } else {
+                dino.x += (posX - dino.x)
+              }
+            } else {
+              dinoImg = dinoJumpLeft;
+              if (dino.x - posX > moveSpeed) {
+                dino.x -= moveSpeed
+              } else {
+                dino.x -= (dino.x - posX)
+              }
+            }
+
+          } else {
+            clearInterval(intId);
+          }
+        }, 7.5);
+      }
+
+      document.addEventListener('touchstart', e => {
+        moveDino(e.changedTouches[0].screenX)
+      });
+      document.addEventListener('touchmove', e => {
+        moveDino(e.changedTouches[0].screenX)
+      });
+
+      requestAnimationFrame(loop);
+    }
+
+    if (localStorage.getItem('timePlayed') != null) {
+      let gameTimes = parseInt(localStorage.getItem('timePlayed'));
+      gameTimes++
+      localStorage.setItem('timePlayed', gameTimes + "")
+    } else {
+      localStorage.setItem('timePlayed', "1")
+    }
+  </script>
+</body>
+
+</html>
