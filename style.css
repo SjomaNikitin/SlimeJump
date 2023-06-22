@@ -55,3 +55,14 @@ html, body {
     color: white;
     transform: translate(-50%,-50%);
   }
+
+  .slimeStyles{
+    position: absolute;
+    left: 10%;
+    top: 20%;
+    width: 68px;
+    height: 65px;
+    transform: scale(2.3);
+    background-image: url(Images/Slime/Green_Slime_Jump.png);
+    background-position: right 595px top -15px;
+  }

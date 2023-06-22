@@ -25,8 +25,6 @@
     <div class="endScore" style="left:50%; top:15%; font-size: 500%;">SCORE</div>
     <div id="endScore" class="endScore" style="left: 50%; top: 25%; font-size: 750%;">100/100</div>
   </div>
-
-  <script src="control.js"></script>
   <script>
 
     document.body.style["overscrollBehavior"] = "none";
@@ -65,10 +63,12 @@
     const reloadButton = document.querySelector(".reloadButton");
     const bestScore = document.getElementById("bestScore");
     const returnBut = document.getElementById("returnBut");
-    let slimeType = 1;
+    let slimeType = 2;
     let scoreBest;
     let scoreNow = 0;
+    let jumpBreak = 5;
     let platformImg = platform2Img;
+
 
     if (localStorage.getItem('bestScore') != null) {
       scoreBest = localStorage.getItem('bestScore')
@@ -115,9 +115,11 @@
     };
 
     function startGame() {
+      const slime = document.createElement('div');
+      slime.className = "slimeStyles";
+      document.body.appendChild(slime);
+
       canvas.style.border = "1px solid black"
-
-
 
       const height = window.innerHeight - 4
       let width = window.innerWidth
@@ -194,8 +196,8 @@
 
       // the dino jumper
       const dino = {
-        width: height / 11.375,
-        height: height / 11.375,
+        width: 156.4,
+        height: 149.5,
         x: canvas.width / 2 - (width / 9.375),
         // y: platformStart - height / 11.12,
         y: height - platformHeight * 12,
@@ -215,6 +217,7 @@
       function loop() {
         if (dino.y > height) {
           GameOver();
+          document.body.removeChild(slime);
           clearInterval(intervalId);
           return;
         } else {
@@ -224,7 +227,7 @@
 
         context.clearRect(0, 0, canvas.width, canvas.height);
 
-        // apply gravity to dino
+        // apply gravity to dino 
         dino.dy += gravity;
 
         // if dino reaches the middle of the screen, move the platforms down
@@ -236,7 +239,6 @@
 
           platforms.forEach(function (platform) {
             platform.y += -dino.dy;
-            console.log("scroll...")
           });
 
           // add more platforms to the top of the screen as dino moves up
@@ -279,7 +281,7 @@
         }
 
         // draw platforms
-
+        let doThisIf = true;
         platforms.forEach(function (platform) {
           if (platform.type != 0) {
             if (platform.type === 2) {
@@ -305,30 +307,73 @@
 
             // dino collides with platform
             // (Axis Aligned Bounding Box [AABB] collision check)
-            dino.x < platform.x + platformWidth &&
-            dino.x + dino.width > platform.x &&
+            dino.x + 50 < platform.x + platformWidth &&
+            dino.x + dino.width -50 > platform.x &&
             dino.y < platform.y + platformHeight &&
             dino.y + dino.height > platform.y
           ) {
             // reset dino position so it's on top of the platform
-            dino.y = platform.y - dino.height;
-            dino.dy = bounceVelocity;
-            if (platform.type === 1) {
-              platform.type = 0;
+            if (jumpBreak === 0) {
+              dino.y = platform.y - dino.height;
+              dino.dy = bounceVelocity;
+              jumpBreak = 18
+              if (platform.type === 1) {
+                platform.type = 0;
+              }
+            } else {
+              jumpBreak--
+              dino.y = platform.y - dino.height;
+              dino.dy = 0
             }
+
             if (platform.type === 3) {
               GameOver();
-          clearInterval(intervalId);
-          setTimeout(function(){context.clearRect(0, 0, canvas.width, canvas.height)}, 20)
-          return;
+              document.body.removeChild(slime);
+              clearInterval(intervalId);
+              setTimeout(function () { context.clearRect(0, 0, canvas.width, canvas.height) }, 20)
+              return;
             }
           }
+
+          if (
+            // platform is visible
+            platform.type != 0 &&
+            dino.dy >= 0 &&
+            // dino collides with platform
+            // (Axis Aligned Bounding Box [AABB] collision check)
+            dino.x + 50 < platform.x + platformWidth &&
+            dino.x + dino.width - 50> platform.x &&
+            dino.y <= platform.y &&
+            dino.y + dino.height < platform.y + platformHeight &&
+            dino.y + dino.height > platform.y - 20
+          ) {
+            if (jumpBreak > 5) {
+                if (jumpBreak > 13) {
+                  slimeType = 1
+                } else {
+                  slimeType = 0
+                }
+              } else {
+                slimeType = 1;
+              }
+              doThisIf=false
+          } else {
+            if (doThisIf) {
+              doThisIf = true
+              slimeType = 2
+            }
+          }
+
         });
 
 
         // draw dino
-        context.drawImage(dinoImg, dino.x, dino.y, dino.width, dino.height);
+        if (slimeType === 2) { slime.style.backgroundPosition = "right 595px top -15px" };
+        if (slimeType === 0) { slime.style.backgroundPosition = "right 364px top -58px" };
+        if (slimeType === 1) { slime.style.backgroundPosition = "right 131px top -58px" };
 
+        slime.style.left = dino.x + 47 + "px";
+        slime.style.top = dino.y + 47 + "px";
         prevDinoY = dino.y;
 
         // remove any platforms that have gone offscreen
