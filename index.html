@@ -127,6 +127,8 @@
       canvas.width = width;
       canvas.height = height;
 
+      let killPlatformColldown = 0;
+
       startPage.style.display = "none"
       score.style.color = "black"
       game = "on"
@@ -240,22 +242,29 @@
           platforms.forEach(function (platform) {
             platform.y += -dino.dy;
           });
-
-          // add more platforms to the top of the screen as dino moves up
-          while (platforms[platforms.length - 1].y > 0) {
-            let types;
+          function calcPlatformType(){
             const numb = Math.round(random(1, 10));
+            killPlatformColldown--;
             if (numb > brokePlatformChance) {
-              types = 2;
+              return 2;
             } else {
               if (numb > brokePlatformChance - 2) {
-                types = 1;
+                return 1;
               } else {
-                types = 3;
+                if(killPlatformColldown>0){
+                  return calcPlatformType()
+              } else {
+                return 3;
+                killPlatformColldown = 3
+              }
               }
             }
+          }
+          // add more platforms to the top of the screen as dino moves up
+          while (platforms[platforms.length - 1].y > 0) {
+
             platforms.push({
-              type: types,
+              type: calcPlatformType(),
               x: random(25, canvas.width - 25 - platformWidth),
               y: platforms[platforms.length - 1].y - (platformHeight + random(minPlatformSpace, maxPlatformSpace))
             })
@@ -439,10 +448,10 @@
       }
 
       document.addEventListener('touchstart', e => {
-        moveDino(e.changedTouches[0].screenX)
+        moveDino(e.changedTouches[0].screenX - dino.width / 2)
       });
       document.addEventListener('touchmove', e => {
-        moveDino(e.changedTouches[0].screenX)
+        moveDino(e.changedTouches[0].screenX - dino.width / 2)
       });
 
       requestAnimationFrame(loop);
